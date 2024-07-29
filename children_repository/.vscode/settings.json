@@ -1,0 +1,14 @@
+{
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+        },
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    },
+    "ruff.lint.preview": true,
+    "ruff.format.preview": true,
+    "ruff.nativeServer": true,
+    "ruff.showNotifications": "always",
+    "python.analysis.typeCheckingMode": "off"
+}
