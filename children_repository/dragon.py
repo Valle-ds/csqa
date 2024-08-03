@@ -15,7 +15,7 @@ import transformers
 import wandb
 from tqdm.auto import tqdm, trange
 
-from modeling import modeling_dragon as modeling_dragon
+from modeling import modeling_dragon_new as modeling_dragon
 from utils import data_utils, optimization_utils, parser_utils, utils
 
 ConstantLRSchedule: types.ModuleType
