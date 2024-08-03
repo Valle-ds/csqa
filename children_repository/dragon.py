@@ -388,8 +388,9 @@ def train(args, resume, devices, kg):
 
     def _rename_key(key):
         return 'lmgnn.' + key
+    all_keys = list(model.state_dict().keys())
 
-    loaded_roberta_keys = [_rename_key(k) for k in loading_info['all_keys']]
+    loaded_roberta_keys = [_rename_key(k) for k in all_keys]
 
     # Separate the parameters into loaded and not loaded
     (
