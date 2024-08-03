@@ -623,7 +623,7 @@ def train(args, resume, devices, kg):
                 is_last = _idx_ == len(a_list) - 1
                 b = min(a + args.mini_batch_size, bs)
                 if args.fp16:
-                    with torch.cuda.amp.autocast():
+                    with torch.amp.autocast('cuda'):
                         if input_data[0][a:b].size()[0] == 0:
                             break
 
