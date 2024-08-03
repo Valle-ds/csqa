@@ -64,8 +64,8 @@ if is_accelerate_available():
         from accelerate.utils.modeling import get_state_dict_from_offload
 
 
-from children_repository.utils import layers
-from children_repository.modeling import modeling_gnn
+from utils import layers
+from modeling import modeling_gnn
 
 
 if is_safetensors_available():
