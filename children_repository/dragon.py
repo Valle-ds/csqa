@@ -15,8 +15,8 @@ import transformers
 import wandb
 from tqdm.auto import tqdm, trange
 
-from children_repository.modeling import modeling_dragon as modeling_dragon
-from children_repository.utils import data_utils, optimization_utils, parser_utils, utils
+from modeling import modeling_dragon as modeling_dragon
+from utils import data_utils, optimization_utils, parser_utils, utils
 
 ConstantLRSchedule: types.ModuleType
 WarmupLinearSchedule: types.ModuleType
