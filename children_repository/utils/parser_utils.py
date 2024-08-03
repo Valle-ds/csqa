@@ -1,6 +1,6 @@
 import argparse
 
-from utils import utils
+from children_repository.utils import utils
 
 ENCODER_DEFAULT_LR = {
     "default": 1e-8,

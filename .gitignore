@@ -1,2 +1,4 @@
 data
 children_baseline/csqa
+__pycache__
+.DS_Store

@@ -15,8 +15,8 @@ import transformers
 import wandb
 from tqdm.auto import tqdm, trange
 
-from modeling import modeling_dragon as modeling_dragon
-from utils import data_utils, optimization_utils, parser_utils, utils
+from children_repository.modeling import modeling_dragon as modeling_dragon
+from children_repository.utils import data_utils, optimization_utils, parser_utils, utils
 
 ConstantLRSchedule: types.ModuleType
 WarmupLinearSchedule: types.ModuleType
@@ -380,7 +380,7 @@ def train(args, resume, devices, kg):
 
     model = construct_model(args, kg, dataset)
     INHERIT_BERT = os.environ.get('INHERIT_BERT', 0)
-    bert_or_roberta = model.lmgnn.bert if INHERIT_BERT else model.lmgnn.roberta
+    bert_or_roberta = model.lmgnn.bert if INHERIT_BERT else model.lmgnn.deberta # roberta
     bert_or_roberta.resize_token_embeddings(len(dataset.tokenizer))
 
     # Get the names of the loaded LM parameters

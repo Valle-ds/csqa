@@ -10,11 +10,8 @@ import numpy as np
 import torch
 from tqdm import tqdm
 from transformers import (
-    BERT_PRETRAINED_CONFIG_ARCHIVE_MAP,
-    OPENAI_GPT_PRETRAINED_CONFIG_ARCHIVE_MAP,
-    ROBERTA_PRETRAINED_CONFIG_ARCHIVE_MAP,
-    T5_PRETRAINED_CONFIG_ARCHIVE_MAP,
-    XLNET_PRETRAINED_CONFIG_ARCHIVE_MAP,
+    DebertaV2Tokenizer,
+    DebertaV2TokenizerFast,
     BertTokenizer,
     BertTokenizerFast,
     OpenAIGPTTokenizer,
@@ -30,17 +27,8 @@ try:
 except ImportError:
     print('transformers does not contain needed AlberTokenizer, it might be a problem')
 
-MODEL_CLASS_TO_NAME = {
-    'gpt': list(OPENAI_GPT_PRETRAINED_CONFIG_ARCHIVE_MAP.keys()),
-    'bert': list(BERT_PRETRAINED_CONFIG_ARCHIVE_MAP.keys()),
-    'xlnet': list(XLNET_PRETRAINED_CONFIG_ARCHIVE_MAP.keys()),
-    'roberta': list(ROBERTA_PRETRAINED_CONFIG_ARCHIVE_MAP.keys()),
-    't5': list(T5_PRETRAINED_CONFIG_ARCHIVE_MAP.keys()),
-    'lstm': ['lstm'],
-}
-if ALBERT_PRETRAINED_CONFIG_ARCHIVE_MAP is not None:
-    MODEL_CLASS_TO_NAME['albert'] = list(ALBERT_PRETRAINED_CONFIG_ARCHIVE_MAP.keys())
-
+ROBERTA_PRETRAINED_CONFIG_ARCHIVE_MAP = {'roberta-large': "https://s3.amazonaws.com/models.huggingface.co/bert/roberta-large-config.json"}
+MODEL_CLASS_TO_NAME = {'roberta': list(ROBERTA_PRETRAINED_CONFIG_ARCHIVE_MAP.keys())}
 MODEL_NAME_TO_CLASS = {
     model_name: model_class
     for model_class, model_name_list in MODEL_CLASS_TO_NAME.items()
@@ -48,12 +36,12 @@ MODEL_NAME_TO_CLASS = {
 }
 
 # Add SapBERT, PubMedBERT configuration
-model_name = 'cambridgeltl/SapBERT-from-PubMedBERT-fulltext'
-MODEL_NAME_TO_CLASS[model_name] = 'bert'
-model_name = 'microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract'
-MODEL_NAME_TO_CLASS[model_name] = 'bert'
-model_name = 'michiyasunaga/BioLinkBERT-large'
-MODEL_NAME_TO_CLASS[model_name] = 'bert'
+# model_name = 'cambridgeltl/SapBERT-from-PubMedBERT-fulltext'
+# MODEL_NAME_TO_CLASS[model_name] = 'bert'
+# model_name = 'microsoft/BiomedNLP-PubMedBERT-base-uncased-abstract'
+# MODEL_NAME_TO_CLASS[model_name] = 'bert'
+# model_name = 'michiyasunaga/BioLinkBERT-large'
+# MODEL_NAME_TO_CLASS[model_name] = 'bert'
 
 
 GPT_SPECIAL_TOKENS = ['_start_', '_delimiter_', '_classify_']
@@ -352,6 +340,22 @@ class MultiGPUSparseAdjDataBatchGenerator(object):
                     cand_indexes.append([i])
                 after_special_tok = False
                 effective_num_toks += 1
+        elif isinstance(self.tokenizer, (DebertaV2Tokenizer, DebertaV2TokenizerFast)):
+            # DeBERTa-v2 Tokenization Logic
+            after_special_tok = False
+            for i, token in enumerate(input_tokens):
+                # Adjust special tokens for DeBERTa-v2 
+                if token in self.tokenizer.special_tokens_map.values(): 
+                    after_special_tok = True
+                    continue
+
+                # Handle word pieces (if applicable to your DeBERTa-v2 setup)
+                if len(cand_indexes) >= 1 and (not after_special_tok) and token.startswith("##"):
+                    cand_indexes[-1].append(i)
+                else:
+                    cand_indexes.append([i])
+                after_special_tok = False
+                effective_num_toks += 1
         else:
             raise NotImplementedError
 
@@ -424,6 +428,21 @@ class MultiGPUSparseAdjDataBatchGenerator(object):
                     cand_indexes.append([i])
                 after_special_tok = False
                 effective_num_toks += 1
+        elif isinstance(self.tokenizer, (DebertaV2Tokenizer, DebertaV2TokenizerFast)):
+            # DeBERTa-v2 Tokenization Logic (Similar to word_mask)
+            after_special_tok = False
+            for i, token in enumerate(input_tokens):
+                if token in self.tokenizer.special_tokens_map.values():
+                    after_special_tok = True
+                    continue
+
+                if len(cand_indexes) >= 1 and (not after_special_tok) and token.startswith("##"):
+                    cand_indexes[-1].append(i)
+                else:
+                    cand_indexes.append([i])
+                after_special_tok = False
+                effective_num_toks += 1
+
         else:
             raise NotImplementedError
         cand_indexes_args = list(range(len(cand_indexes)))
@@ -602,7 +621,8 @@ class DRAGON_DataLoader(object):
         self.debug_sample_size = 32
         self.cxt_node_connects_all = cxt_node_connects_all
 
-        self.model_type = MODEL_NAME_TO_CLASS[model_name]
+        self.model_type = 'deberta-v2'
+        # self.model_type = MODEL_NAME_TO_CLASS[model_name]
         self.load_resources(kg)
 
         # Load training data
@@ -814,12 +834,14 @@ class DRAGON_DataLoader(object):
                 'xlnet': XLNetTokenizer,
                 'roberta': RobertaTokenizer,
                 'albert': AlbertTokenizer,
+                'deberta-v2': DebertaV2Tokenizer, 
             }.get(self.model_type)
         except:  # noqa: E722
             tokenizer_class = {
                 'bert': BertTokenizer,
                 'xlnet': XLNetTokenizer,
                 'roberta': RobertaTokenizer,
+                'deberta-v2': DebertaV2Tokenizer, 
             }.get(self.model_type)
 
         tokenizer = tokenizer_class.from_pretrained(self.model_name)
@@ -928,7 +950,7 @@ class DRAGON_DataLoader(object):
                 raise NotImplementedError
             elif self.model_type in ('gpt',):
                 input_tensors = load_gpt_input_tensors(input_jsonl_path, max_seq_length)
-            elif self.model_type in ('bert', 'xlnet', 'roberta', 'albert', 't5'):
+            elif self.model_type in ('bert', 'xlnet', 'roberta', 'albert', 't5', 'deberta-v2'):
                 input_tensors = load_bert_xlnet_roberta_input_tensors(
                     input_jsonl_path,
                     max_seq_length,
