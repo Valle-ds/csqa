@@ -7,7 +7,7 @@ from torch import nn
 from torch.autograd import Variable
 from torch_geometric.nn import MessagePassing
 from torch_geometric.utils import softmax
-from children_repository.modeling.scatter import scatter
+from modeling.scatter import scatter
 
 
 def make_one_hot(labels, C):
